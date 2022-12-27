@@ -1,0 +1,4 @@
+# This is renamed to prevent it being picked up in the current directory
+[user]
+	email = pi@pi.com 
+	name = Pi
