@@ -29,6 +29,12 @@ fn hello_name(name: &str) -> String {
 
 #[get("/beep")]
 fn beep_brief() -> &'static str {
+    let mut pin = Gpio::new().unwrap().get(GPIO_BUZZER).unwrap().into_output();
+
+    // Blink the LED by setting the pin's logic level high for 500 ms.
+    pin.set_high();
+    thread::sleep(Duration::from_millis(500));
+    pin.set_low();
     "Beep"
 }
 
