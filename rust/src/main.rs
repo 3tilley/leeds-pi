@@ -27,30 +27,47 @@ fn hello_name(name: &str) -> String {
     format!("Hello, {}!", name)
 }
 
-#[get("/beep")]
-fn beep_brief() -> &'static str {
+fn beep(times: u8, duration_ms: u64) -> {
     let mut pin = Gpio::new().unwrap().get(GPIO_BUZZER).unwrap().into_output();
 
-    // Blink the LED by setting the pin's logic level high for 500 ms.
-    pin.set_high();
-    thread::sleep(Duration::from_millis(500));
-    pin.set_low();
+    let duration = Duration::from_millis(duration_ms);
+    // Beep the buzzer by setting the pin's logic level high for 500 ms.
+    for _ in 0..times {
+        pin.set_high();
+        thread::sleep(duration);
+        pin.set_low();
+        thread::sleep(duration);
+    }
+}
+
+#[get("/beep")]
+fn beep_brief() -> &'static str {
+    beep(1, 500);
     "Beep"
 }
 
-#[get("/blink")]
-fn blink() -> &'static str {
+fn blink(times: u8) {
     let mut pin = Gpio::new().unwrap().get(GPIO_LED).unwrap().into_output();
 
-    // Blink the LED by setting the pin's logic level high for 500 ms.
-    pin.set_high();
-    thread::sleep(Duration::from_millis(500));
-    pin.set_low();
+    for _ in 0..times {
+        // Blink the LED by setting the pin's logic level high for 500 ms.
+        pin.set_high();
+        thread::sleep(Duration::from_millis(500));
+        pin.set_low();
+        thread::sleep(Duration::from_millis(500));
+    }
+}
+
+#[get("/blink")]
+fn blink_route() -> &'static str {
+    blink(1);
+
     "Blink"
 }
 
 #[get("/blink/<times>")]
 fn blink_times(times: u8) -> String {
+    blink(times);
     format!("Blink {} times", times)
 }
 
