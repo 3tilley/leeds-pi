@@ -9,7 +9,8 @@ use rppal::system::DeviceInfo;
 
 // These are Broadcom pins (BCM), they correspond to physical pins 15 and 16 respectively
 // https://electronicsmith.com/raspberry-pi-pinout-for-all-models/
-const GPIO_BUZZER: u8 = 22;
+//const GPIO_BUZZER: u8 = 22;
+const GPIO_BUZZER: u8 = 27;
 const GPIO_LED: u8 = 23;
 
 #[get("/")]
