@@ -17,10 +17,15 @@ echo "=== Add configs ==="
 scp -i ./leedspi_rsa ./.bashrc $new_host:~/.bashrc
 scp -i ./leedspi_rsa ./.inputrc $new_host:~/.inputrc
 scp -i ./leedspi_rsa ./gritconfig $new_host:~/.gitconfig
+#vimrc
 
 echo "=== Create folders ==="
 ssh -i ./leedspi_rsa -t $new_host "mkdir -p ~/leeds-pi"
 ssh -i ./leedspi_rsa -t $new_host "mkdir -p ~/git"
+
+# Add libgpiod2
+# Add raspi config to enable SPI
+
 
 
 
