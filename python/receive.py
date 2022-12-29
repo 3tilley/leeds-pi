@@ -28,18 +28,16 @@ logging.basicConfig(
 
 NEW_BANDS = [50, 110, 300, 600, 1200, 2400, 4800]
 
-SEARCH_TIMEOUT = 5
+SEARCH_TIMEOUT = 2
 
 p = Path() / "data.csv"
 
-need_header = p.read_text().startswith("dbm")
+need_header = not (p.exists() and p.read_text().startswith("dbm"))
 
 with p.open("a") as f:
 
     if need_header:
-        header = f"dbm,checksum,linkQualityIndicator,"
-        +f"duration,syncMode,baud,"
-        +f"mancEncoding,payload\n"
+        header = f"dbm,checksum,linkQualityIndicator," + f"duration,syncMode,baud," + f"mancEncoding,payload\n"
         f.write(header)
 
     while True:
@@ -63,9 +61,7 @@ with p.open("a") as f:
                             end = datetime.datetime.now()
                             d = (end - start_time).total_seconds()
                             s = (
-                                f"{packet.rssi_dbm},{packet.checksum_valid},{packet.link_quality_indicator},"
-                                + f"{d},{sync_mode},{baud},"
-                                + f"{manc_encoding},{packet.payload.hex()}\n"
+                                f"{packet.rssi_dbm},{packet.checksum_valid},{packet.link_quality_indicator}," + f"{d},{sync_mode},{baud}," + f"{manc_encoding},{packet.payload.hex()}\n"
                             )
                             print(s)
                             f.write(s)
