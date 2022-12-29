@@ -27,7 +27,7 @@ logging.basicConfig(
 # ]
 
 # NEW_BANDS = [50, 110, 300, 600, 1200, 2400, 4800]
-NEW_BANDS = [4800]
+NEW_BANDS = [300]
 
 SEARCH_TIMEOUT = 2
 
@@ -42,9 +42,9 @@ with p.open("a") as f:
         f.write(header)
 
     while True:
-        for manc_encoding in [True, False]:
+        for manc_encoding in [False]:
             for baud in NEW_BANDS:
-                for sync_mode in [e for e in cc1101.SyncMode]:
+                for sync_mode in [cc1101.SyncMode.NO_PREAMBLE_AND_SYNC_WORD]:
                     with cc1101.CC1101() as transceiver:
                         if manc_encoding:
                             transceiver.enable_manchester_code()
