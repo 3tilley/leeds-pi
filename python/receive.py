@@ -7,58 +7,65 @@ import cc1101
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s:%(levelname)s:%(name)s:%(funcName)s:%(message)s",
-    datefmt="%Y-%m-%dT%H:%M:%S%z"
+    datefmt="%Y-%m-%dT%H:%M:%S%z",
 )
 # Original baud bands, nothing in the higher freqs was found
-#SUPPORTED_BAUD = [
-    #600,
-#1200,
-    #2400,
-#4800,
-  #9600,
- #14400,
- #19200,
-  #28800,
-  #38400,
-  #57600,
-  #76800,
-  #115200,
-  #250000,
-#]
+# SUPPORTED_BAUD = [
+# 600,
+# 1200,
+# 2400,
+# 4800,
+# 9600,
+# 14400,
+# 19200,
+# 28800,
+# 38400,
+# 57600,
+# 76800,
+# 115200,
+# 250000,
+# ]
 
-NEW_BANDS = [
-    50,
-    110,
-    300,
-    600,
-    1200,
-    2400,
-    4800,
-]
+NEW_BANDS = [50, 110, 300, 600, 1200, 2400, 4800]
 
 SEARCH_TIMEOUT = 5
 
 p = Path() / "data.csv"
 
+need_header = p.read_text().startswith("dbm")
+
 with p.open("a") as f:
+
+    if need_header:
+        header = f"dbm,checksum,linkQualityIndicator,"
+        +f"duration,syncMode,baud,"
+        +f"mancEncoding,payload\n"
+        f.write(header)
 
     while True:
         for manc_encoding in [True, False]:
             for baud in NEW_BANDS:
                 for sync_mode in [cc1101.SyncMode.NO_PREAMBLE_AND_SYNC_WORD]:
                     with cc1101.CC1101() as transceiver:
-                        transceiver.enable_manchester_code()
+                        if manc_encoding:
+                            transceiver.enable_manchester_code()
                         transceiver.set_base_frequency_hertz(433.92e6)
                         transceiver.set_symbol_rate_baud(baud)
-                        #for sync_mode in [e for e in cc1101.SyncMode]:
+                        # for sync_mode in [e for e in cc1101.SyncMode]:
                         transceiver.set_sync_mode(sync_mode)
                         print(transceiver)
-                        #transceiver.transmit(b"\x01\xff\x00 message")
+                        # transceiver.transmit(b"\x01\xff\x00 message")
                         start_time = datetime.datetime.now()
-                        packet = transceiver._wait_for_packet(timeout_seconds=SEARCH_TIMEOUT,gdo0_gpio_line_name="GPIO24".encode())
+                        packet = transceiver._wait_for_packet(
+                            timeout_seconds=SEARCH_TIMEOUT, gdo0_gpio_line_name="GPIO24".encode()
+                        )
                         if packet:
                             end = datetime.datetime.now()
                             d = (end - start_time).total_seconds()
-                            s = f"{packet.rssi_dbm},{packet.checksum_valid},{packet.link_quality_indicator},{packet.payload.hex()},{d},{sync_mode},{baud}\n"
+                            s = (
+                                f"{packet.rssi_dbm},{packet.checksum_valid},{packet.link_quality_indicator},"
+                                + f"{d},{sync_mode},{baud},"
+                                + f"{manc_encoding},{packet.payload.hex()}\n"
+                            )
                             print(s)
                             f.write(s)
