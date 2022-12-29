@@ -50,9 +50,10 @@ with p.open("a") as f:
                             transceiver.enable_manchester_code()
                         transceiver.set_base_frequency_hertz(433.92e6)
                         transceiver.set_symbol_rate_baud(baud)
-                        transceiver.set_packet_length_bytes(1024)
+                        transceiver.set_packet_length_bytes(255)
                         # for sync_mode in [e for e in cc1101.SyncMode]:
                         transceiver.set_sync_mode(sync_mode)
+                        transceiver.set_packet_length_mode(cc1101.PacketLengthMode.FIXED)
                         print(transceiver)
                         # transceiver.transmit(b"\x01\xff\x00 message")
                         start_time = datetime.datetime.now()
