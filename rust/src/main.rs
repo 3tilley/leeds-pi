@@ -15,7 +15,7 @@ const GPIO_LED: u8 = 23;
 
 #[get("/")]
 fn index() -> String {
-    format!("This is the Rust service running on {}", DeviceInfo::new().unwrap()?.model())
+    format!("This is the Rust service running on {}", DeviceInfo::new().unwrap().model())
 }
 
 #[get("/hello")]
@@ -28,7 +28,7 @@ fn hello_name(name: &str) -> String {
     format!("Hello, {}!", name)
 }
 
-fn beep(times: u8, duration_ms: u64) -> {
+fn beep(times: u8, duration_ms: u64) {
     let mut pin = Gpio::new().unwrap().get(GPIO_BUZZER).unwrap().into_output();
 
     let duration = Duration::from_millis(duration_ms);
@@ -67,7 +67,7 @@ fn blink_route() -> &'static str {
 }
 
 #[get("/blink/<times>")]
-fn blink_times(times: u8) -> String {
+fn blink_route_times(times: u8) -> String {
     blink(times);
     format!("Blink {} times", times)
 }
@@ -76,9 +76,8 @@ fn blink_times(times: u8) -> String {
 fn rocket() -> _ {
     let config = Config {
         address: Ipv4Addr::new(0, 0, 0, 0).into(),
-        port: 80,
         ..Config::debug_default()
     };
 
-    rocket::custom(config).mount("/", routes![index, hello, hello_name])
+    rocket::custom(config).mount("/", routes![index, hello, hello_name, beep_brief, blink_route, blink_route_times])
 }
