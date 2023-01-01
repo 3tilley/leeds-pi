@@ -1,0 +1,12 @@
+[package]
+name = "packet-sniffer"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+cc1101 = "0.0.3"
+cc1101-rust = "0.2.1"
+pico-args = "0.5.0"
+rppal = { version = "0.14.1", features = ["embedded-hal", "hal"] }
