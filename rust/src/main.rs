@@ -5,6 +5,7 @@ use std::thread;
 use std::time::Duration;
 // use futures_util::stream::stream::StreamExt;
 use futures_util::{SinkExt, StreamExt};
+use lazy_static::lazy_static;
 use poem::{EndpointExt, get, Route, Server, handler, IntoResponse};
 use poem::listener::TcpListener;
 use poem::middleware::Tracing;
@@ -17,6 +18,56 @@ use poem::web::websocket::{Message, WebSocket};
 //const GPIO_BUZZER: u8 = 22;
 const GPIO_BUZZER: u8 = 27;
 const GPIO_LED: u8 = 23;
+
+const PORT: u32 = 8080;
+lazy_static! {
+
+static ref STATIC_CHAT_HTML: String = {
+        let html = r###"
+    <body>
+        <form id="loginForm">
+            Name: <input id="nameInput" type="text" />
+            <button type="submit">Login</button>
+        </form>
+
+        <form id="sendForm" hidden>
+            Text: <input id="msgInput" type="text" />
+            <button type="submit">Send</button>
+        </form>
+
+        <textarea id="msgsArea" cols="50" rows="30" hidden></textarea>
+    </body>
+    <script>
+        let ws;
+        const loginForm = document.querySelector("#loginForm");
+        const sendForm = document.querySelector("#sendForm");
+        const nameInput = document.querySelector("#nameInput");
+        const msgInput = document.querySelector("#msgInput");
+        const msgsArea = document.querySelector("#msgsArea");
+
+        nameInput.focus();
+        loginForm.addEventListener("submit", function(event) {
+            event.preventDefault();
+            loginForm.hidden = true;
+            sendForm.hidden = false;
+            msgsArea.hidden = false;
+            msgInput.focus();
+            ws = new WebSocket("ws://127.0.0.1:{PORT}/ws/" + nameInput.value);
+            ws.onmessage = function(event) {
+                msgsArea.value += event.data + "\r\n";
+            }
+        });
+
+        sendForm.addEventListener("submit", function(event) {
+            event.preventDefault();
+            ws.send(msgInput.value);
+            msgInput.value = "";
+        });
+    </script>
+    "###.replace("{PORT}", PORT.to_string().as_str());
+        html
+    };
+}
 
 #[handler]
 fn index() -> String {
@@ -171,51 +222,9 @@ fn ws(
 
 #[handler]
 fn chat() -> Html<&'static str> {
-    Html(
-        r###"
-    <body>
-        <form id="loginForm">
-            Name: <input id="nameInput" type="text" />
-            <button type="submit">Login</button>
-        </form>
-
-        <form id="sendForm" hidden>
-            Text: <input id="msgInput" type="text" />
-            <button type="submit">Send</button>
-        </form>
-
-        <textarea id="msgsArea" cols="50" rows="30" hidden></textarea>
-    </body>
-    <script>
-        let ws;
-        const loginForm = document.querySelector("#loginForm");
-        const sendForm = document.querySelector("#sendForm");
-        const nameInput = document.querySelector("#nameInput");
-        const msgInput = document.querySelector("#msgInput");
-        const msgsArea = document.querySelector("#msgsArea");
-
-        nameInput.focus();
-        loginForm.addEventListener("submit", function(event) {
-            event.preventDefault();
-            loginForm.hidden = true;
-            sendForm.hidden = false;
-            msgsArea.hidden = false;
-            msgInput.focus();
-            ws = new WebSocket("ws://127.0.0.1:3000/ws/" + nameInput.value);
-            ws.onmessage = function(event) {
-                msgsArea.value += event.data + "\r\n";
-            }
-        });
-
-        sendForm.addEventListener("submit", function(event) {
-            event.preventDefault();
-            ws.send(msgInput.value);
-            msgInput.value = "";
-        });
-    </script>
-    "###,
-    )
+    Html(STATIC_CHAT_HTML.as_str())
 }
+
 
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
@@ -234,7 +243,7 @@ async fn main() -> Result<(), std::io::Error> {
         .at("/blink/:times", get(blink_times))
         .at("/beep", get(beep_brief))
         .at("/beep/:times/:level/:millis", get(beep_freq_route)).with(Tracing);
-    Server::new(TcpListener::bind("0.0.0.0:8080"))
+    Server::new(TcpListener::bind(format!("0.0.0.0:{}", PORT)))
         .name("hello-world")
         .run(app)
         .await
