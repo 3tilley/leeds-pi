@@ -1,23 +1,21 @@
 // #[macro_use] extern crate rocket;
 
 use std::net::Ipv4Addr;
-use std::thread;
+use std::{io, thread};
 use std::time::Duration;
 // use futures_util::stream::stream::StreamExt;
 use futures_util::{SinkExt, StreamExt};
 use lazy_static::lazy_static;
-use poem::{EndpointExt, get, Route, Server, handler, IntoResponse};
+use poem::{EndpointExt, get, handler, IntoResponse, Route, Server};
 use poem::listener::TcpListener;
 use poem::middleware::Tracing;
 use poem::web::{Data, Html, Path};
 use poem::web::websocket::{Message, WebSocket};
-// use rocket::Config;
+use crate::antenna::{JunkData, listen_and_record};
 
-// These are Broadcom pins (BCM), they correspond to physical pins 15 and 16 respectively
-// https://electronicsmith.com/raspberry-pi-pinout-for-all-models/
-//const GPIO_BUZZER: u8 = 22;
-const GPIO_BUZZER: u8 = 27;
-const GPIO_LED: u8 = 23;
+mod rpi;
+mod antenna;
+// use rocket::Config;
 
 const PORT: u32 = 8080;
 lazy_static! {
@@ -93,87 +91,29 @@ fn hello_name(Path(name): Path<String>) -> String {
     format!("Hello, {}!", name)
 }
 
-fn beep_freq(times: u8, voltage: u8, millis: u64) {
-    #[cfg(not(any(target_os = "windows", target_os = "macos")))]
-    {
-    let mut pin = rppal::gpio::Gpio::new().unwrap().get(GPIO_BUZZER).unwrap().into_output();
-    }
-
-    for _ in 0..times {
-        // Blink the LED by setting the pin's logic level high for 500 ms.
-        #[cfg(any(target_os = "windows", target_os = "macos"))]
-        {
-            println!("beep");
-        }
-        #[cfg(not(any(target_os = "windows", target_os = "macos")))]
-        {
-            pin.write(voltage.into());
-        }
-        thread::sleep(Duration::from_millis(millis));
-        #[cfg(any(target_os = "windows", target_os = "macos"))]
-        {
-            println!("beep");
-        }
-        #[cfg(not(any(target_os = "windows", target_os = "macos")))]
-        {
-            pin.set_low();
-        }
-        thread::sleep(Duration::from_millis(millis));
-    }
-}
-
 
 #[handler]
 fn beep_brief() -> &'static str {
-    beep_freq(1, 255, 500);
+    rpi::beep_freq(1, 255, 500);
     "Beep"
 }
 
 #[handler]
 fn beep_freq_route(Path((times, level, millis)): Path<(u8, u8, u64)>) -> String {
-    beep_freq(times, level, millis);
+    rpi::beep_freq(times, level, millis);
     format!("Times: {}. Level: {}. Millis: {}", times, level, millis)
-}
-
-fn blink(times: u8) {
-    #[cfg(not(any(target_os = "windows", target_os = "macos")))]
-    {
-        let mut pin = rppal::gpio::Gpio::new().unwrap().get(GPIO_LED).unwrap().into_output();
-    }
-
-    for _ in 0..times {
-        // Blink the LED by setting the pin's logic level high for 500 ms.
-        #[cfg(any(target_os = "windows", target_os = "macos"))]
-        {
-            println!("blink");
-        }
-        #[cfg(not(any(target_os = "windows", target_os = "macos")))]
-        {
-            pin.set_high();
-        }
-        thread::sleep(Duration::from_millis(500));
-        #[cfg(any(target_os = "windows", target_os = "macos"))]
-        {
-            println!("blink");
-        }
-        #[cfg(not(any(target_os = "windows", target_os = "macos")))]
-        {
-                pin.set_low();
-        }
-        thread::sleep(Duration::from_millis(500));
-    }
 }
 
 #[handler]
 fn blink_route() -> &'static str {
-    blink(1);
+    rpi::blink(1);
 
     "Blink"
 }
 
 #[handler]
 fn blink_times(Path(times): Path<u8>) -> String {
-    blink(times);
+    rpi::blink(times);
     format!("Blink {} times", times)
 }
 
@@ -209,20 +149,21 @@ fn ws(
     })
 }
 
-// #[launch]
-// fn rocket() -> _ {
-//     let config = Config {
-//         address: Ipv4Addr::new(0, 0, 0, 0).into(),
-//         port: 80,
-//         ..Config::debug_default()
-//     };
-//
-//     rocket::custom(config).mount("/", routes![index, hello, hello_name])
-// }
-
 #[handler]
 fn chat() -> Html<&'static str> {
     Html(STATIC_CHAT_HTML.as_str())
+}
+
+#[handler]
+fn antenna_data() -> String {
+    let junk = JunkData {
+        start: 0,
+        end: Some(100),
+        packet_size: 32
+    };
+    let mut s : Box<dyn io::Write> = Box::new(Vec::new());
+    listen_and_record(Box::new(junk), &mut s);
+    (&s as Vec<_>).join("")
 }
 
 
