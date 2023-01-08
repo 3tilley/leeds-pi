@@ -1,3 +1,4 @@
+#!/bin/bash
 ### This is a .bashrc with some niceties
 
 # Bash niceties

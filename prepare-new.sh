@@ -2,26 +2,26 @@
 
 set -eu
 
-readonly new_host=pi@rpi1-v12b
+readonly new_host=pi@rpi2-v4b
 
-#echo "=== Copying SSH public key ==="
-#ssh-copy-id -i ./leedspi_rsa.pub $new_host
+echo "=== Copying SSH public key ==="
+ssh-copy-id -i ./leedspi_rsa.pub $new_host
 
 echo "=== Testing Internet Connectivity ==="
-ssh -i ./leedspi_rsa -t $new_host "ping -c4 8.8.8.8"
+ssh -t $new_host "ping -c4 8.8.8.8"
 
 echo "=== Testing DNS ==="
-ssh -i ./leedspi_rsa -t $new_host "ping -c4 www.google.com"
+ssh -t $new_host "ping -c4 www.google.com"
 
 echo "=== Add configs ==="
-scp -i ./leedspi_rsa ./.bashrc $new_host:~/.bashrc
-scp -i ./leedspi_rsa ./.inputrc $new_host:~/.inputrc
-scp -i ./leedspi_rsa ./gritconfig $new_host:~/.gitconfig
+scp ./.bashrc $new_host:~/.bashrc
+scp ./.inputrc $new_host:~/.inputrc
+scp ./gritconfig $new_host:~/.gitconfig
 #vimrc
 
 echo "=== Create folders ==="
-ssh -i ./leedspi_rsa -t $new_host "mkdir -p ~/leeds-pi"
-ssh -i ./leedspi_rsa -t $new_host "mkdir -p ~/git"
+ssh -t $new_host "mkdir -p ~/leeds-pi"
+ssh -t $new_host "mkdir -p ~/git"
 
 # Add libgpiod2
 # Add raspi config to enable SPI

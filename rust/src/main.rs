@@ -11,10 +11,13 @@ use poem::listener::TcpListener;
 use poem::middleware::Tracing;
 use poem::web::{Data, Html, Path};
 use poem::web::websocket::{Message, WebSocket};
-use crate::antenna::{JunkData, listen_and_record};
+// use crate::antenna::{JunkData, listen_and_record};
+use crate::rpi::{play_tone, play_tune};
+use crate::frequency::*;
 
 mod rpi;
 mod antenna;
+mod frequency;
 // use rocket::Config;
 
 const PORT: u32 = 8080;
@@ -94,14 +97,14 @@ fn hello_name(Path(name): Path<String>) -> String {
 
 #[handler]
 fn beep_brief() -> &'static str {
-    rpi::beep_freq(1, 255, 500);
+    rpi::beep_freq(1, 500);
     "Beep"
 }
 
 #[handler]
-fn beep_freq_route(Path((times, level, millis)): Path<(u8, u8, u64)>) -> String {
-    rpi::beep_freq(times, level, millis);
-    format!("Times: {}. Level: {}. Millis: {}", times, level, millis)
+fn beep_freq_route(Path((times, millis)): Path<(u8, u64)>) -> String {
+    rpi::beep_freq(times, millis);
+    format!("Times: {}. Millis: {}", times, millis)
 }
 
 #[handler]
@@ -150,20 +153,52 @@ fn ws(
 }
 
 #[handler]
+fn tone_route(Path((note, secs)): Path<(u64, u8)>) -> String {
+    play_tone(440.0, 16 * secs, 60);
+    "Tone".to_string()
+}
+
+#[handler]
+fn toxic() -> String {
+    let tune = vec![
+        (C_5, 2),
+        (C_5, 2),
+        (EB_5, 1),
+        (D_5, 1),
+        (C_5, 1),
+        (D_5, 1),
+        (EB_5, 3),
+        (C_5, 1),
+        (EB_5, 1),
+        (D_5, 1),
+        (C_5, 2),
+        // Bar 2
+        (GB_8, 4),
+        (D_8, 4),
+        (EB_8, 2),
+        (D_8, 2),
+        (C_8, 4)
+    ];
+    play_tune(tune, 144);
+    "Tone".to_string()
+}
+
+#[handler]
 fn chat() -> Html<&'static str> {
     Html(STATIC_CHAT_HTML.as_str())
 }
 
 #[handler]
-fn antenna_data() -> String {
-    let junk = JunkData {
-        start: 0,
-        end: Some(100),
-        packet_size: 32
-    };
-    let mut s : Box<dyn io::Write> = Box::new(Vec::new());
-    listen_and_record(Box::new(junk), &mut s);
-    (&s as Vec<_>).join("")
+fn antenna_data() -> Vec<u8> {
+    // let junk = JunkData::new(0, Some(100), 32);
+    // let mut vec: Vec<u8> = Vec::new();
+    // {
+    //     let mut s : Box<dyn io::Write> = Box::new(&mut vec);
+    //     listen_and_record(Box::new(junk), &mut s);
+    // }
+    // vec
+    // format!("{}", s.)
+    vec![1,2,3]
 }
 
 
@@ -180,10 +215,14 @@ async fn main() -> Result<(), std::io::Error> {
         .at("/", get(index))
         .at("/hello", get(hello))
         .at("/hello/:name", get(hello_name))
+        .at("/antenna", get(antenna_data))
         .at("/blink", get(blink_route))
         .at("/blink/:times", get(blink_times))
         .at("/beep", get(beep_brief))
-        .at("/beep/:times/:level/:millis", get(beep_freq_route)).with(Tracing);
+        .at("/beep/:times/:level/:millis", get(beep_freq_route))
+        .at("/tone/:note/:secs", get(tone_route))
+        .at("/toxic", get(toxic))
+        .with(Tracing);
     Server::new(TcpListener::bind(format!("0.0.0.0:{}", PORT)))
         .name("hello-world")
         .run(app)
